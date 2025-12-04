@@ -422,7 +422,7 @@ function renderSessions() {
             </div>
             <div class="session-info">
                 <div class="detail-item">
-                    <div class="detail-label">المدرس</div>
+                    <div class="detail-label">الدكتور</div>
                     <div class="detail-value">👨‍🏫 ${session.teacher_name}</div>
                 </div>
                 <div class="detail-item">
