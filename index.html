@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نظام إدارة الحضور - Modern Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-content">
+        <div class="logo">
+          <span>📊</span>
+          <span>نظام إدارة الحضور</span>
+        </div>
+        <div class="nav-controls">
+          <button class="theme-toggle" onclick="toggleTheme()">
+            <span id="themeIcon">🌙</span>
+            <span id="themeText">الوضع الداكن</span>
+          </button>
+          <button class="refresh-btn" onclick="fetchData()">
+            <span>🔄</span>
+            <span>تحديث</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">👨‍🎓</div>
+          <div class="stat-value" id="totalStudents">0</div>
+          <div class="stat-label">إجمالي الطلاب</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">👨‍🏫</div>
+          <div class="stat-value" id="totalTeachers">0</div>
+          <div class="stat-label">إجمالي المدرسين</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📅</div>
+          <div class="stat-value" id="totalSessions">0</div>
+          <div class="stat-label">إجمالي المحاضرات</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" id="totalAttendance">0</div>
+          <div class="stat-label">سجلات الحضور</div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-title">📈 إحصائيات الحضور</div>
+        <div class="chart">
+          <div class="bar-chart" id="attendanceChart"></div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('overview')">
+          <span>🏠</span> نظرة عامة
+        </button>
+        <button class="tab" onclick="switchTab('students')">
+          <span>👨‍🎓</span> الطلاب
+        </button>
+        <button class="tab" onclick="switchTab('teachers')">
+          <span>👨‍🏫</span> المدرسين
+        </button>
+        <button class="tab" onclick="switchTab('sessions')">
+          <span>📅</span> المحاضرات
+        </button>
+        <button class="tab" onclick="switchTab('attendance')">
+          <span>✅</span> سجل الحضور
+        </button>
+      </div>
+
+      <div id="overview" class="content-section active">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📊 ملخص الأداء</div>
+          </div>
+          <div class="pie-chart" id="overviewChart"></div>
+        </div>
+      </div>
+
+      <div id="students" class="content-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">👨‍🎓 قائمة الطلاب</div>
+          </div>
+          <input
+            type="text"
+            class="search-box"
+            placeholder="🔍 ابحث عن طالب..."
+            onkeyup="filterStudents(this.value)"
+          />
+          <div id="studentsContainer">
+            <div class="loading">جاري تحميل بيانات الطلاب</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="teachers" class="content-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">👨‍🏫 قائمة المدرسين</div>
+          </div>
+          <input
+            type="text"
+            class="search-box"
+            placeholder="🔍 ابحث عن مدرس..."
+            onkeyup="filterTable('teachersTable', this.value)"
+          />
+          <div class="table-container">
+            <table id="teachersTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>الاسم</th>
+                  <th>رقم WhatsApp</th>
+                  <th>RFID</th>
+                  <th>عدد المحاضرات</th>
+                </tr>
+              </thead>
+              <tbody id="teachersBody">
+                <tr>
+                  <td colspan="5" class="loading">جاري التحميل</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="sessions" class="content-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📅 المحاضرات</div>
+          </div>
+          <input
+            type="text"
+            class="search-box"
+            placeholder="🔍 ابحث عن محاضرة..."
+            onkeyup="filterSessions(this.value)"
+          />
+          <div id="sessionsContainer">
+            <div class="loading">جاري تحميل المحاضرات</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="attendance" class="content-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">✅ سجل الحضور</div>
+          </div>
+          <input
+            type="text"
+            class="search-box"
+            placeholder="🔍 ابحث في سجل الحضور..."
+            onkeyup="filterTable('attendanceTable', this.value)"
+          />
+          <div class="table-container">
+            <table id="attendanceTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>معرف المحاضرة</th>
+                  <th>اسم الطالب</th>
+                  <th>اسم المدرس</th>
+                  <th>وقت المسح</th>
+                  <th>الحالة</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceBody">
+                <tr>
+                  <td colspan="6" class="loading">جاري التحميل</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

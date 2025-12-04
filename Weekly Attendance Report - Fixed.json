@@ -1,0 +1,1614 @@
+{
+  "name": "Weekly Attendance Report - Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "attendance",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "bab6f54f-7ef6-4d3c-828c-cc2efb5bce9e",
+      "name": "Receive RFID Scan",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2592,
+        -752
+      ],
+      "webhookId": "fb9a4e08-7ed3-4ba3-9aa5-53d836c16639"
+    },
+    {
+      "parameters": {
+        "jsCode": "// اجلب التايم ستامب من الرسالة\nconst ts = $input.first().json.body.timestamp;\n\n// نفصل التاريخ يدويًا حتى نتجنب تحويل UTC\n// مثال: \"2025-11-28T15:05:12+02:00\"\nconst [datePart, timePart] = ts.split(\"T\");\nconst [year, month, day] = datePart.split(\"-\");\nconst [timeMain, offset] = timePart.split(\"+\");\nconst [hour, minute, second] = timeMain.split(\":\");\n\n// نبني التاريخ *بدون* ما نسمح لـ Date يحوله لـ UTC\nconst date = new Date(\n  Number(year),\n  Number(month) - 1,\n  Number(day),\n  Number(hour),\n  Number(minute),\n  Number(second)\n);\n\n// دوال مساعدة\nconst pad = (n) => String(n).padStart(2, \"0\");\n\n// أسماء الأيام والشهور بالعربي\nconst daysAr = [\"الأحد\",\"الاثنين\",\"الثلاثاء\",\"الأربعاء\",\"الخميس\",\"الجمعة\",\"السبت\"];\nconst monthsAr = [\"يناير\",\"فبراير\",\"مارس\",\"أبريل\",\"مايو\",\"يونيو\",\"يوليو\",\"أغسطس\",\"سبتمبر\",\"أكتوبر\",\"نوفمبر\",\"ديسمبر\"];\n\n// بيانات عربية\nconst dayAr = daysAr[date.getDay()];\nconst monthAr = monthsAr[date.getMonth()];\n\n// بيانات إنجليزية للجلسة\nconst daysEn = [\"Sunday\",\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\",\"Saturday\"];\nconst dayEn = daysEn[date.getDay()];\n\n// إنتاج القيم النهائية\nconst formatted_time =\n  `${year}-${month}-${day} ` +\n  `${pad(hour)}:${pad(minute)}:${pad(second)}`;\n\nconst pretty_time =\n  `${dayAr} ${Number(day)} ${monthAr} ${year} • ` +\n  `${pad(hour)}:${pad(minute)}`;\n\nconst session_id =\n  `${dayEn}-${year}-${month}-${day}-` +\n  `${pad(hour)}-${pad(minute)}`;\n\nconst date_only = `${year}-${month}-${day}`;\n\nreturn [{\n  timestamp: ts,\n  formatted_time,\n  pretty_time,\n  session_id,\n  date_only\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2368,
+        -752
+      ],
+      "id": "793b16a6-c817-4904-83eb-57cc5c4390fb",
+      "name": "Generate Time Data"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Users",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "uid_rfid",
+              "lookupValue": "={{ $('Receive RFID Scan').item.json.body.rfid_uid }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "df58cd9b-5889-49cb-9f83-9aef5b8434a7",
+      "name": "Read User Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -2144,
+        -752
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.role }}",
+              "value2": "teacher"
+            }
+          ]
+        }
+      },
+      "id": "2bd090b3-1abd-4fae-9982-a7048a4dced2",
+      "name": "Check User Role",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1920,
+        -752
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 953617394,
+          "mode": "list",
+          "cachedResultName": "Sessions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=953617394"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "teacher_uid",
+              "lookupValue": "={{ $('Read User Data').item.json.uid_rfid }}"
+            },
+            {
+              "lookupColumn": "status",
+              "lookupValue": "Active"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "35b386d9-7c12-420a-baa3-dacad9e87f14",
+      "name": "Find Teacher Active Session",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -1696,
+        -1040
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 953617394,
+          "mode": "list",
+          "cachedResultName": "Sessions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=953617394"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_id": "={{ $json.session_id }}",
+            "end_time": "={{ $('Generate Time Data').item.json.formatted_time }}",
+            "status": "Closed",
+            "row_number": 0
+          },
+          "matchingColumns": [
+            "session_id"
+          ],
+          "schema": [
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "teacher_uid",
+              "displayName": "teacher_uid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "teacher_name",
+              "displayName": "teacher_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "start_time",
+              "displayName": "start_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "end_time",
+              "displayName": "end_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -1248,
+        -1136
+      ],
+      "id": "30281b2d-2a7a-4b4a-81c7-6c8b55c07739",
+      "name": "Close Session",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 953617394,
+          "mode": "list",
+          "cachedResultName": "Sessions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=953617394"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_id": "={{ $('Generate Time Data').item.json.session_id }}",
+            "teacher_uid": "={{ $('Read User Data').item.json.uid_rfid }}",
+            "teacher_name": "={{ $('Read User Data').item.json.name }}",
+            "start_time": "={{ $('Generate Time Data').item.json.formatted_time }}",
+            "status": "Active"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "teacher_uid",
+              "displayName": "teacher_uid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "teacher_name",
+              "displayName": "teacher_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "start_time",
+              "displayName": "start_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "end_time",
+              "displayName": "end_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -1248,
+        -944
+      ],
+      "id": "bdcc500f-7653-4399-ac23-c0cac327967a",
+      "name": "Open New Session",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 953617394,
+          "mode": "list",
+          "cachedResultName": "Sessions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=953617394"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "Active"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b70c20e2-2416-4b47-a2f2-2fbdd36ae7ca",
+      "name": "Find Active Session",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -1696,
+        -560
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "Active"
+            }
+          ]
+        }
+      },
+      "id": "9b6f7767-0310-4b52-8063-9a38703db205",
+      "name": "Is Session Active",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        -560
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1812337202,
+          "mode": "list",
+          "cachedResultName": "Attendance",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=1812337202"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "session_id",
+              "lookupValue": "={{ $json.session_id }}"
+            },
+            {
+              "lookupColumn": "student_uid",
+              "lookupValue": "={{ $('Read User Data').item.json.uid_rfid }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "e2c6be5b-18bb-4979-ac1a-9c07c16abb6e",
+      "name": "Check Previous Attendance",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -1248,
+        -656
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "Present"
+            }
+          ]
+        }
+      },
+      "id": "3912167e-63bb-4afb-85c0-74eb30197971",
+      "name": "Is Already Present",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        -656
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1812337202,
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_id": "={{ $('Find Active Session').item.json.session_id }}",
+            "student_uid": "={{ $('Read User Data').item.json.uid_rfid }}",
+            "teacher_name": "={{ $('Find Active Session').item.json.teacher_name }}",
+            "student_name": "={{ $('Read User Data').item.json.name }}",
+            "scan_time": "={{ $('Generate Time Data').item.json.formatted_time }}",
+            "status": "=Present"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "student_uid",
+              "displayName": "student_uid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "teacher_name",
+              "displayName": "teacher_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "student_name",
+              "displayName": "student_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "scan_time",
+              "displayName": "scan_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -800,
+        -560
+      ],
+      "id": "030669a1-d5fa-4946-bb7c-92985b88797b",
+      "name": "Record Attendance",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": true,\n  \"action\": \"student_recorded\",\n  \"led\": \"green\",\n  \"buzzer\": \"single_beep\",\n  \"duration\": 2000,\n  \"message\": \"تم تسجيل الحضور بنجاح\",\n  \"data\": {\n    \"student_name\": $json.student_name,\n    \"teacher_name\": $json.teacher_name,\n    \"time\": $json.scan_time\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        -560
+      ],
+      "id": "140b9c52-e10a-47af-9e45-04eeff6c3784",
+      "name": "Response Success"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": false,\n  \"action\": \"already_present\",\n  \"led\": \"yellow\",\n  \"buzzer\": \"double_beep\",\n  \"duration\": 2000,\n  \"message\": \"سبق تسجيل الحضور\",\n  \"data\": {}\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        -752
+      ],
+      "id": "c0c7757b-5b13-466f-be45-3557f7290829",
+      "name": "Response Already Present"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": false,\n  \"action\": \"no_session\",\n  \"led\": \"red\",\n  \"buzzer\": \"long_beep\",\n  \"duration\": 3000,\n  \"message\": \"لا توجد حصة نشطة حالياً\",\n  \"error\": \"NO_ACTIVE_SESSION\"\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        -464
+      ],
+      "id": "2c8d2b65-4c57-4370-b114-602b9d425812",
+      "name": "Response No Session"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6ea55367-dab8-40d4-b782-62b66b3e0547",
+              "leftValue": "={{ $('Receive RFID Scan').item.json.body.rfid_uid }}",
+              "rightValue": "={{ $json.teacher_uid }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "524b40fa-97fb-440d-bb3e-40e0d25abdd0",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "Active",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1472,
+        -1040
+      ],
+      "id": "ed193c3f-4237-426c-8a65-f12bd1c08500",
+      "name": "Check Teacher Session"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "test",
+        "remoteJid": "=2{{ $('Read User Data').item.json.whatsapp }}",
+        "messageText": "=👋 مرحباً {{ $('Record Attendance').item.json.student_name }},\n\nتم تسجيل حضورك بنجاح في محاضره:\n📘 الدكتور: {{ $('Record Attendance').item.json.teacher_name }}\n\n⏰ وقت التسجيل:\n{{ $('Generate Time Data').item.json.pretty_time }}\n\n💡 نتمنى لك يوماً دراسياً موفقاً ومليئاً بالإنجاز!",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api-english.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -560
+      ],
+      "id": "c86e12ce-3d3f-4304-8c7c-3ad5bab11170",
+      "name": "Send WhatsApp Message",
+      "credentials": {
+        "evolutionApi": {
+          "id": "gLznekvmrGI4eykr",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": true,\n  \"action\": \"session_closed\",\n  \"led\": \"purple_blink\",\n  \"buzzer\": \"four_beeps\",\n  \"duration\": 2000,\n  \"message\": \"تم إغلاق الحصة بنجاح\",\n  \"data\": {\n    \"teacher_name\": $('Read User Data').item.json.name,\n    \"end_time\": $json.end_time\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        -1136
+      ],
+      "id": "76b3199d-ab78-4bd6-b132-b463c3aaccd6",
+      "name": "Response Session Closed"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": true,\n  \"action\": \"session_opened\",\n  \"led\": \"blue_blink\",\n  \"buzzer\": \"triple_beep\",\n  \"duration\": 2000,\n  \"message\": \"تم فتح الحصة بنجاح\",\n  \"data\": {\n    \"teacher_name\": $('Read User Data').item.json.name,\n    \"session_id\": $json.session_id,\n    \"start_time\": $json.start_time\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        -944
+      ],
+      "id": "3903c289-a66c-4d3f-adb0-43c13c55968a",
+      "name": "Response Session Opened"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "test",
+        "remoteJid": "=2{{ $('Read User Data').item.json.whatsapp }}",
+        "messageText": "=🎓 دكتور {{ $('Read User Data').item.json.name }}،\n\nتم إغلاق المحاضرة بنجاح ✔️\n\n⏰ وقت الإغلاق: {{ $('Generate Time Data').item.json.pretty_time }}\n\nشكرًا لك على وقتك وجهودك، ونتمنى لك يوماً موفقاً 🙏✨",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api-english.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        -1136
+      ],
+      "id": "ca58f794-e004-471e-af54-f982bea0c005",
+      "name": "Send text",
+      "credentials": {
+        "evolutionApi": {
+          "id": "gLznekvmrGI4eykr",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "test",
+        "remoteJid": "=2{{ $('Read User Data').item.json.whatsapp }}",
+        "messageText": "=🎓 أهلاً دكتور {{ $('Read User Data').item.json.name }}،\n\nتم فتح المحاضرة بنجاح ✔️\n\n⏰ وقت البدء: {{ $('Generate Time Data').item.json.pretty_time }}\n\nنتمنى لك محاضرة موفقة ومليئة بالإنجاز 🌟",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api-english.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        -944
+      ],
+      "id": "81448d67-5944-4c24-ab75-7fa9b53660b4",
+      "name": "Send text1",
+      "credentials": {
+        "evolutionApi": {
+          "id": "gLznekvmrGI4eykr",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * 5"
+            }
+          ]
+        }
+      },
+      "id": "7d15a59d-aeb2-4836-9bf8-babb0edaaf16",
+      "name": "كل جمعة 12 بالليل",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2592,
+        -48
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2592,
+        -240
+      ],
+      "id": "0fbcdaaf-9d70-4740-818d-80f4dcf7b814",
+      "name": "When clicking ‘Execute workflow’",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 953617394,
+          "mode": "list",
+          "cachedResultName": "Sessions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=953617394"
+        },
+        "options": {}
+      },
+      "id": "61a578a1-9740-4988-ab9f-273516d95c24",
+      "name": "جلب الجلسات",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -1920,
+        -144
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1812337202,
+          "mode": "list",
+          "cachedResultName": "Attendance",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=1812337202"
+        },
+        "options": {}
+      },
+      "id": "2d673cd0-721c-4f70-aa84-c882cc8bd663",
+      "name": "جلب الحضور",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -1696,
+        -144
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// جلب البيانات من النودات السابقة\nconst students = $('جلب الطلاب').all();\nconst sessions = $('جلب الجلسات').all();\nconst attendance = $('جلب الحضور').all();\n\n// فلترة الطلاب فقط (role === 'student')\nconst studentsList = students.filter(s => s.json && s.json.role === 'student');\n\n// فلترة الجلسات المغلقة فقط\nconst closedSessions = sessions.filter(s => s.json && s.json.status === 'Closed');\n\n// نأخذ معرفات الجلسات الفريدة (session_id) — هذا يعطي العدد الحقيقي للجلسات\nconst uniqueSessionIds = new Set(\n  closedSessions\n    .map(s => (s.json && s.json.session_id) ? s.json.session_id : null)\n    .filter(id => !!id)\n);\n\nconst totalSessions = uniqueSessionIds.size;\n\n// إذا لم يكن هناك جلسات مغلقة\nif (totalSessions === 0) {\n  return [{\n    json: {\n      no_sessions: true,\n      message: 'لا توجد جلسات مغلقة'\n    }\n  }];\n}\n\n// إنشاء خريطة للجلسات للوصول السريع\nconst sessionsMap = {};\nclosedSessions.forEach(session => {\n  if (session.json && session.json.session_id) {\n    sessionsMap[session.json.session_id] = session.json;\n  }\n});\n\n// أنشئ مجموعة من حضور كل سجل مرتبط بالجلسات المغلقة\nconst attendanceBySession = {};\nattendance.forEach(a => {\n  if (!a.json) return;\n  const sid = a.json.session_id;\n  const stu = a.json.student_uid || a.json.student_uid_rfid || a.json.uid_rfid;\n  const status = a.json.status;\n  if (!sid || !stu) return;\n  if (!uniqueSessionIds.has(sid)) return;\n  if (!attendanceBySession[sid]) attendanceBySession[sid] = {};\n  attendanceBySession[sid][stu] = status;\n});\n\n// لكل طالب نحسب عدد الجلسات التي حضرها ونجمّع تفاصيل الجلسات\nconst studentStats = studentsList.map(student => {\n  const studentUid = student.json.uid_rfid || student.json.student_uid || student.json.uid;\n\n  const studentSessions = [];\n  let presentCount = 0;\n\n  Object.entries(attendanceBySession).forEach(([sessionId, studentsStatus]) => {\n    const sessionData = sessionsMap[sessionId];\n    if (!sessionData) return;\n\n    const studentStatus = studentsStatus[studentUid] || 'Absent';\n\n    let date = '';\n    let time = '';\n\n    if (sessionData.start_time) {\n      const [datePart, timePart] = sessionData.start_time.split(' ');\n      date = datePart;\n      time = timePart || '';\n    } else if (sessionId) {\n      try {\n        const parts = sessionId.split('-');\n        const dateParts = parts.filter(p => /^\\d{4}$/.test(p) || /^\\d{2}$/.test(p));\n        if (dateParts.length >= 3) {\n          date = `${dateParts[0]}-${dateParts[1]}-${dateParts[2]}`;\n        }\n      } catch (e) {}\n    }\n\n    studentSessions.push({\n      session_id: sessionId,\n      teacher: sessionData.teacher_name || sessionData.teacher || 'غير معروف',\n      date: date,\n      status: studentStatus,\n      time: time\n    });\n\n    if (studentStatus === 'Present') presentCount++;\n  });\n\n  const absentCount = Math.max(0, totalSessions - presentCount);\n  const attendanceRate = totalSessions > 0 ? ((presentCount / totalSessions) * 100) : 0;\n  const attendanceRateFixed = attendanceRate.toFixed(1);\n\n  let whatsapp = (student.json.whatsapp || '').toString().replace(/\\D/g, '') || '';\n\n  const message = `حضر ${presentCount} من ${totalSessions} — التقييم ${attendanceRateFixed}%`;\n\n  return {\n    name: student.json.name || '',\n    whatsapp,\n    total_sessions: totalSessions,\n    present: presentCount,\n    absent: absentCount,\n    rate: attendanceRateFixed + '%',\n    message,\n    Report_time:$('حساب التواريخ').first().json.end_date,\n    sessions: studentSessions\n  };\n});\n\nreturn studentStats.map(stat => ({ json: stat }));\n"
+      },
+      "id": "27153dfc-ce1c-438f-91e9-a6a00cc08908",
+      "name": "معالجة وحساب البيانات",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1472,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Users",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "role",
+              "lookupValue": "student"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2144,
+        -144
+      ],
+      "id": "d8d30eaa-b319-4e34-8cb7-a700dd32527f",
+      "name": "جلب الطلاب",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date();\nconst endDate = new Date(today);\nendDate.setHours(0, 0, 0, 0);\n\nconst startDate = new Date(endDate);\nstartDate.setDate(endDate.getDate() - 6);\n\nconst formatDate = (date) => {\n  const year = date.getFullYear();\n  const month = String(date.getMonth() + 1).padStart(2, '0');\n  const day = String(date.getDate()).padStart(2, '0');\n  return `${year}-${month}-${day}`;\n};\n\nreturn [{\n  json: {\n    start_date: formatDate(startDate),\n    end_date: formatDate(endDate),\n    week_range: `${formatDate(startDate)} إلى ${formatDate(endDate)}`\n  }\n}];"
+      },
+      "id": "0243aeda-3a7f-4c86-83f2-1b588c5cb98c",
+      "name": "حساب التواريخ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2368,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// جلب بيانات الطلاب من النود السابق\nconst students = $input.all();\n\n// تجهيز رسالة لكل طالب\nconst messages = students.map(student => {\n  const data = student.json;\n  \n  // بناء تفاصيل الجلسات\n  let sessionsDetails = '';\n  if (data.sessions && data.sessions.length > 0) {\n    sessionsDetails = data.sessions.map((session, index) => {\n      const statusEmoji = session.status === 'Present' ? '✅' : '❌';\n      return `${index + 1}. ${statusEmoji} ${session.date} - ${session.teacher} (${session.status === 'Present' ? 'حاضر' : 'غائب'})`;\n    }).join('\\n');\n  }\n  \n  // بناء الرسالة\n  const message = `👋 مرحباً *${data.name}* ،\n\n📊 *تقرير الحضور الأسبوعي*\n━━━━━━━━━━━━━━━━━━━\n\n📅 الفترة: ${data.Report_time}\n📚 إجمالي الجلسات: ${data.total_sessions}\n✅ الحضور: ${data.present}\n❌ الغياب: ${data.absent}\n📈 نسبة الحضور: ${data.rate}\n\n━━━━━━━━━━━━━━━━━━━\n📋 *تفاصيل الجلسات:*\n\n${sessionsDetails}\n\n━━━━━━━━━━━━━━━━━━━\n💬 *${data.message}*\n\n${data.rate === '100.0%' ? '🌟 ممتاز! استمر في التفوق!' : parseFloat(data.rate) >= 50 ? '👍 جيد! حاول تحسين حضورك' : '⚠️ يرجى الاهتمام بالحضور المنتظم'}\n\n💡 نتمنى لك التوفيق والنجاح! 📚`;\n  \n  return {\n    json: {\n      name: data.name,\n      whatsapp: data.whatsapp,\n      message: message,\n      total_sessions: data.total_sessions,\n      present: data.present,\n      absent: data.absent,\n      rate: data.rate\n    }\n  };\n});\n\nreturn messages;"
+      },
+      "id": "dd0a861f-4fd2-4675-a6a7-dfc28d104564",
+      "name": "تجهيز رسائل WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1248,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "test",
+        "remoteJid": "=2{{ $json.whatsapp }}@s.whatsapp.net",
+        "messageText": "={{ $json.message }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api-english.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        -16
+      ],
+      "id": "4e5b97ea-adc2-45e2-8e5d-3ed9d63bba6c",
+      "name": "إرسال التقرير الأسبوعي",
+      "credentials": {
+        "evolutionApi": {
+          "id": "gLznekvmrGI4eykr",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// جلب البيانات من النود السابق (معالجة وحساب البيانات)\nconst studentReports = $input.all();\n\n// جلب بيانات الطلاب من Google Sheets\nconst allStudents = $('جلب الطلاب').all();\n\n// إنشاء Map للوصول السريع للبيانات حسب الاسم\nconst reportsMap = new Map();\nstudentReports.forEach(item => {\n  const name = item.json.name;\n  // تحويل البيانات الكاملة لـ JSON string\n  reportsMap.set(name, JSON.stringify(item.json));\n});\n\n// تجهيز البيانات للتحديث\nconst updates = [];\nallStudents.forEach(student => {\n  const studentName = student.json.name;\n  \n  // إذا كان في تقرير للطالب ده، نحدثه\n  if (reportsMap.has(studentName)) {\n    updates.push({\n      json: {\n        uid_rfid: student.json.uid_rfid,\n        name: studentName,\n        role: student.json.role,\n        whatsapp: student.json.whatsapp,\n        'Network theory': reportsMap.get(studentName)\n      }\n    });\n  }\n});\n\nreturn updates;"
+      },
+      "id": "d3ebb915-5478-46e5-91a5-a504124fdda9",
+      "name": "تجهيز بيانات Networks theory1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1248,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Users"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "row_number": 0,
+            "uid_rfid": "={{ $json.uid_rfid }}",
+            "name": "={{ $json.name }}",
+            "role": "={{ $json.role }}",
+            "whatsapp": "={{ $json.whatsapp }}"
+          },
+          "matchingColumns": [
+            "uid_rfid"
+          ],
+          "schema": [
+            {
+              "id": "uid_rfid",
+              "displayName": "uid_rfid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Network theory",
+              "displayName": "Network theory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "4680baea-d20b-4a0d-a22d-95965110f929",
+      "name": "حفظ في Networks theory1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -848,
+        -240
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "user",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2608,
+        416
+      ],
+      "id": "73124e0a-d262-4b9d-8013-986e4441d0ca",
+      "name": "Webhook",
+      "webhookId": "ace0c4cb-72be-4c5d-8730-17a27bb5b716"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Users",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2384,
+        416
+      ],
+      "id": "b6965f19-e0a5-41fd-9917-acd06120d051",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "Sessions",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2096,
+        416
+      ],
+      "id": "875ed43b-407d-4c7f-ace1-e5ebad3083f6",
+      "name": "Webhook1",
+      "webhookId": "ace0c4cb-72be-4c5d-8730-17a27bb5b716"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 953617394,
+          "mode": "list",
+          "cachedResultName": "Sessions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=953617394"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1872,
+        416
+      ],
+      "id": "bca7243f-67be-4b31-b6ff-9d0a6dd5248b",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "Attendance",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1616,
+        416
+      ],
+      "id": "9e4762cf-88be-4ca9-85b3-b8d6af8ead1a",
+      "name": "Webhook2",
+      "webhookId": "ace0c4cb-72be-4c5d-8730-17a27bb5b716"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc",
+          "mode": "list",
+          "cachedResultName": "Attendance System",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1812337202,
+          "mode": "list",
+          "cachedResultName": "Attendance",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zaYsl1XwC-AQ-2YexJr2ZM6Y3KCsmh7a2FaqExEafLc/edit#gid=1812337202"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1392,
+        416
+      ],
+      "id": "49a8dce3-5338-4fa3-86c8-a743fbd87f71",
+      "name": "Get row(s) in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L6WaV6OABTWjvmIV",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive RFID Scan": {
+      "main": [
+        [
+          {
+            "node": "Generate Time Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Time Data": {
+      "main": [
+        [
+          {
+            "node": "Read User Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read User Data": {
+      "main": [
+        [
+          {
+            "node": "Check User Role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check User Role": {
+      "main": [
+        [
+          {
+            "node": "Find Teacher Active Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find Active Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Teacher Active Session": {
+      "main": [
+        [
+          {
+            "node": "Check Teacher Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Close Session": {
+      "main": [
+        [
+          {
+            "node": "Response Session Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open New Session": {
+      "main": [
+        [
+          {
+            "node": "Response Session Opened",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Active Session": {
+      "main": [
+        [
+          {
+            "node": "Is Session Active",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Session Active": {
+      "main": [
+        [
+          {
+            "node": "Check Previous Attendance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Response No Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Previous Attendance": {
+      "main": [
+        [
+          {
+            "node": "Is Already Present",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Already Present": {
+      "main": [
+        [
+          {
+            "node": "Response Already Present",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record Attendance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Attendance": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Teacher Session": {
+      "main": [
+        [
+          {
+            "node": "Close Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Open New Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Response Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response Session Closed": {
+      "main": [
+        [
+          {
+            "node": "Send text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response Session Opened": {
+      "main": [
+        [
+          {
+            "node": "Send text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "كل جمعة 12 بالليل": {
+      "main": [
+        [
+          {
+            "node": "حساب التواريخ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "حساب التواريخ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "جلب الجلسات": {
+      "main": [
+        [
+          {
+            "node": "جلب الحضور",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "جلب الحضور": {
+      "main": [
+        [
+          {
+            "node": "معالجة وحساب البيانات",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "معالجة وحساب البيانات": {
+      "main": [
+        [
+          {
+            "node": "تجهيز بيانات Networks theory1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "تجهيز رسائل WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "تجهيز رسائل WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "إرسال التقرير الأسبوعي",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "جلب الطلاب": {
+      "main": [
+        [
+          {
+            "node": "جلب الجلسات",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "حساب التواريخ": {
+      "main": [
+        [
+          {
+            "node": "جلب الطلاب",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "تجهيز بيانات Networks theory1": {
+      "main": [
+        [
+          {
+            "node": "حفظ في Networks theory1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook2": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "16f90cc3-72b2-4288-b85d-27aaac7d2cf6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "387fb254b53ba7bfd2fb46c69526828ed16630d6f254ed527757c1cf51725d28"
+  },
+  "id": "BGgCJp68B09tezp8",
+  "tags": []
+}
